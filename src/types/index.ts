@@ -65,3 +65,30 @@ export const CATEGORY_ICONS: Record<Category, string> = {
   bonus: '🎁',
   other: '💵',
 }
+
+export interface Budget {
+  category: ExpenseCategory
+  amount: number
+  month: string
+}
+
+export interface BudgetStatus {
+  category: ExpenseCategory
+  categoryLabel: string
+  budget: number
+  spent: number
+  remaining: number
+  percentage: number
+  warningLevel: 'none' | 'warning' | 'danger'
+}
+
+export interface SearchFilters {
+  dateRange: 'all' | 'week' | 'month' | 'custom'
+  startDate?: string
+  endDate?: string
+  type?: TransactionType
+  category?: Category
+  minAmount?: number
+  maxAmount?: number
+  keyword?: string
+}

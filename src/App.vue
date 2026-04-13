@@ -3,19 +3,25 @@ import { ref, computed, onMounted } from 'vue'
 import TransactionForm from './components/TransactionForm.vue'
 import TransactionTimeline from './components/TransactionTimeline.vue'
 import SummaryPanel from './components/SummaryPanel.vue'
-import type { Transaction } from './types'
+import BudgetPanel from './components/BudgetPanel.vue'
+import SearchPanel from './components/SearchPanel.vue'
+import AuthGuard from './components/AuthGuard.vue'
+import type { Transaction, ExpenseCategory } from './types'
 import { 
   loadTransactions, 
   saveTransactions, 
   groupByDate, 
   calculateMonthlySummary,
-  getCurrentMonth 
+  getCurrentMonth,
+  getBudgetStatus,
+  setBudget
 } from './utils/storage'
 
 const transactions = ref<Transaction[]>([])
 const showForm = ref(false)
 const editingTransaction = ref<Transaction | null>(null)
 const currentMonth = ref(getCurrentMonth())
+const isAuthenticated = ref(false)
 
 const dailySummaries = computed(() => {
   const monthTransactions = transactions.value.filter(t => 
@@ -28,9 +34,19 @@ const monthlySummary = computed(() => {
   return calculateMonthlySummary(transactions.value, currentMonth.value)
 })
 
+const budgetRefreshKey = ref(0)
+
+const budgetStatus = computed(() => {
+  return getBudgetStatus(transactions.value, currentMonth.value, budgetRefreshKey.value)
+})
+
 onMounted(() => {
   transactions.value = loadTransactions()
 })
+
+function handleAuthenticated() {
+  isAuthenticated.value = true
+}
 
 function handleAddNew() {
   editingTransaction.value = null
@@ -79,10 +95,17 @@ function nextMonth() {
 function goToToday() {
   currentMonth.value = getCurrentMonth()
 }
+
+function handleUpdateBudget(category: ExpenseCategory, amount: number) {
+  setBudget(category, amount, currentMonth.value)
+  budgetRefreshKey.value++
+}
 </script>
 
 <template>
-  <div class="app">
+  <AuthGuard v-if="!isAuthenticated" @authenticated="handleAuthenticated" />
+  
+  <div v-else class="app">
     <header class="header">
       <div class="header-content">
         <h1 class="logo">💰 财务流水看板</h1>
@@ -102,9 +125,19 @@ function goToToday() {
           <button class="today-btn" @click="goToToday">今</button>
         </div>
         <SummaryPanel :summary="monthlySummary" :current-month="currentMonth" />
+        <BudgetPanel 
+          :budget-status="budgetStatus" 
+          :current-month="currentMonth"
+          @update-budget="handleUpdateBudget"
+        />
       </aside>
 
       <section class="content">
+        <SearchPanel 
+          :transactions="transactions"
+          @edit="handleEdit"
+          @delete="handleDelete"
+        />
         <TransactionTimeline 
           :daily-summaries="dailySummaries"
           @edit="handleEdit"

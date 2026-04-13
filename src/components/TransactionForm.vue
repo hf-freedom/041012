@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Transaction, TransactionType, Category, ExpenseCategory, IncomeCategory } from '../types'
+import type { Transaction, TransactionType, Category } from '../types'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../types'
 import { generateId, getToday } from '../utils/storage'
 

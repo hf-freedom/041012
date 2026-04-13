@@ -29,6 +29,32 @@ export interface MonthlySummary {
   categoryBreakdown: Record<string, number>
 }
 
+export interface Budget {
+  category: ExpenseCategory
+  month: string
+  amount: number
+}
+
+export interface BudgetStatus {
+  category: ExpenseCategory
+  budget: number
+  spent: number
+  remaining: number
+  percentage: number
+  warningLevel: 'normal' | 'warning' | 'danger'
+}
+
+export interface SearchFilters {
+  dateRange: 'all' | 'week' | 'month' | 'custom'
+  startDate: string
+  endDate: string
+  type: 'all' | TransactionType
+  category: 'all' | Category
+  minAmount: string
+  maxAmount: string
+  keyword: string
+}
+
 export const EXPENSE_CATEGORIES: { value: ExpenseCategory; label: string; icon: string }[] = [
   { value: 'catering', label: '餐饮', icon: '🍜' },
   { value: 'transport', label: '交通', icon: '🚗' },

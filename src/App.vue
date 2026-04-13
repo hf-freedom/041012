@@ -3,30 +3,56 @@ import { ref, computed, onMounted } from 'vue'
 import TransactionForm from './components/TransactionForm.vue'
 import TransactionTimeline from './components/TransactionTimeline.vue'
 import SummaryPanel from './components/SummaryPanel.vue'
-import type { Transaction } from './types'
+import BudgetPanel from './components/BudgetPanel.vue'
+import SearchPanel from './components/SearchPanel.vue'
+import type { Transaction, SearchFilters } from './types'
 import { 
   loadTransactions, 
   saveTransactions, 
   groupByDate, 
   calculateMonthlySummary,
-  getCurrentMonth 
+  getCurrentMonth,
+  filterTransactions
 } from './utils/storage'
 
 const transactions = ref<Transaction[]>([])
 const showForm = ref(false)
 const editingTransaction = ref<Transaction | null>(null)
 const currentMonth = ref(getCurrentMonth())
+const searchFilters = ref<SearchFilters>({
+  dateRange: 'all',
+  startDate: '',
+  endDate: '',
+  type: 'all',
+  category: 'all',
+  minAmount: '',
+  maxAmount: '',
+  keyword: '',
+})
+
+const filteredTransactions = computed(() => {
+  return filterTransactions(transactions.value, searchFilters.value)
+})
 
 const dailySummaries = computed(() => {
-  const monthTransactions = transactions.value.filter(t => 
-    t.date.startsWith(currentMonth.value)
+  const monthTransactions = filteredTransactions.value.filter(t => 
+    t.date.startsWith(currentMonth.value) || searchFilters.value.dateRange !== 'all' || searchFilters.value.keyword
   )
-  return groupByDate(monthTransactions)
+  const source = searchFilters.value.dateRange !== 'all' || searchFilters.value.keyword || 
+                  searchFilters.value.type !== 'all' || searchFilters.value.category !== 'all' ||
+                  searchFilters.value.minAmount || searchFilters.value.maxAmount
+    ? filteredTransactions.value
+    : transactions.value.filter(t => t.date.startsWith(currentMonth.value))
+  return groupByDate(source)
 })
 
 const monthlySummary = computed(() => {
   return calculateMonthlySummary(transactions.value, currentMonth.value)
 })
+
+function handleFiltersChange(filters: SearchFilters) {
+  searchFilters.value = filters
+}
 
 onMounted(() => {
   transactions.value = loadTransactions()
@@ -102,9 +128,11 @@ function goToToday() {
           <button class="today-btn" @click="goToToday">今</button>
         </div>
         <SummaryPanel :summary="monthlySummary" :current-month="currentMonth" />
+        <BudgetPanel :transactions="transactions" :current-month="currentMonth" />
       </aside>
 
       <section class="content">
+        <SearchPanel @filters-change="handleFiltersChange" />
         <TransactionTimeline 
           :daily-summaries="dailySummaries"
           @edit="handleEdit"
